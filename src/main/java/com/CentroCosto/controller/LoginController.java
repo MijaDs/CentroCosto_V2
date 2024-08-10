@@ -11,10 +11,15 @@ import java.io.IOException;
 import org.springframework.ui.Model;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.ModelAndView;
 
 /**
  *
@@ -27,14 +32,15 @@ public class LoginController {
     private UsuarioService usuarioService;
 
     @PostMapping("/Login")
-    public String login(@RequestParam("username") String username, @RequestParam("password") String password, Model model) {
+    public ModelAndView login(@RequestParam("username") String username, @RequestParam("password") String password) {
         if (usuarioService.validarUsuario(username, password)) {
-            // Si el usuario es válido, redirigir al dashboard o a la página principal
-            return "redirect:/Index";
+            // Si el usuario es válido, redirigir a la página principal
+            return new ModelAndView("redirect:templates/centro/centroViews");
         } else {
             // Si el usuario no es válido, mostrar un mensaje de error
-            model.addAttribute("error", "Credenciales inválidas");
-            return "Login";
+            ModelAndView modelAndView = new ModelAndView("Login");
+            modelAndView.addObject("error", "Credenciales inválidas");
+            return modelAndView;
         }
     }
 }
