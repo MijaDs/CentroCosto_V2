@@ -18,6 +18,9 @@ import org.springframework.data.repository.query.Param;
 public interface UsuarioRepo extends JpaRepository<Usuario, Integer>{
     @Procedure(procedureName = "VALIDAR_USUARIO")
     Integer validarUsuario(@Param("username") String username, @Param("password") String password);
+    
+    @Procedure(procedureName= "INCERTAR_USUARIO")
+    String incertarUsuario(@Param("username") String username, @Param("password") String password, @Param("rol") String rol,@Param("id_centroCosto") int id_centroCosto);
 }
 
 

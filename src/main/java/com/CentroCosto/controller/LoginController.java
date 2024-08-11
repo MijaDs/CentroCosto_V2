@@ -43,4 +43,22 @@ public class LoginController {
             return modelAndView;
         }
     }
+
+    @PostMapping("/agregarUsuario")
+    public ModelAndView agregarUsuario(@RequestParam("username") String username,
+            @RequestParam("password") String password,
+            @RequestParam("rol") String rol,
+            @RequestParam("centroCosto") int centroCosto) {
+        String resultado = usuarioService.agregarUsuario(username, password, rol, centroCosto);
+        if (resultado.equals("Usuario insertado correctamente")) {
+            // Si el usuario se agregó correctamente, redirigir a la página principal
+            return new ModelAndView("redirect:templates/centro/centroViews");
+        } else {
+            // Si hubo un error al agregar el usuario, mostrar un mensaje de error
+            ModelAndView modelAndView = new ModelAndView("agregarUsuario");
+            modelAndView.addObject("error", resultado);
+            return modelAndView;
+        }
+    }
+
 }

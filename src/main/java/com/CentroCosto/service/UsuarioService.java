@@ -27,4 +27,9 @@ public class UsuarioService {
         Integer result = usuarioRepo.validarUsuario(username, password);
         return result != null && result > 0;
     }
+    
+    public String agregarUsuario(String username, String password, String rol, int centroCosto){
+        String res = usuarioRepo.incertarUsuario(username, password, rol, centroCosto);
+        return res;
+    }
 }
