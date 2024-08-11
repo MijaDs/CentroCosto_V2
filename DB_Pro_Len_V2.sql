@@ -98,6 +98,7 @@ ALTER TABLE USUARIOS ADD CONSTRAINT ID_CC_FK FOREIGN KEY (ID_CentroCosto) REFERE
 
 ---------------------------------------------------------------------------------------------------------------------------
 -- Secuencias en funcion de (AutoIncrement) para los ID de las tablas
+CREATE SEQUENCE usuario_seq START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
 CREATE SEQUENCE seq_centro_costo START WITH 101 INCREMENT BY 1;
 CREATE SEQUENCE seq_presupuesto START WITH 201 INCREMENT BY 1;
 CREATE SEQUENCE seq_rubro START WITH 301 INCREMENT BY 1;
@@ -311,27 +312,9 @@ SELECT
 FROM PRESUPUESTO;
 
 //procedimientos almacenados
-drop procedure SP_AGREGAR_CENTRO_COSTO;
 
-CREATE OR REPLACE PROCEDURE SP_AGREGAR_CENTRO_COSTO(c_nombre IN VARCHAR2)
-AS
-    CONT NUMBER;
-    RES VARCHAR(200);
-BEGIN
-    SELECT COUNT(*) INTO CONT
-    FROM CENTRO_COSTOS
-    WHERE Nombre = c_nombre;
-    IF CONT = 0 THEN
-        INSERT INTO CENTRO_COSTOS(Nombre) VALUES (c_nombre);
-        RES := 'Centro de Costo Agregado';
-    
-    ELSE
-        RES := 'Centro de costo ya existe';
-    END IF;
-    RETURN RES;
-END;
-    
 
+    
 
 //Procedimientos almacenados 
 CREATE OR REPLACE FUNCTION validar_usuario (
@@ -363,18 +346,104 @@ END;
 
 
 
-
+-----------------------------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION crear_centro_costo_y_presupuesto(
+    p_nombre_centro_costo IN VARCHAR2,
+    p_inicio_periodo IN DATE,
+    p_fin_periodo IN DATE,
+    p_total IN NUMBER
+) RETURN VARCHAR2 IS
+    v_id_centro_costo NUMBER;
+    v_id_presupuesto VARCHAR2(100);
+    v_mensaje VARCHAR2(100);
+BEGIN
+    -- Verificar si el centro de costo ya existe
+    BEGIN
+        SELECT ID_CentroCosto INTO v_id_centro_costo
+        FROM CENTRO_COSTOS
+        WHERE Nombre = p_nombre_centro_costo;
+        
+        v_mensaje := 'El centro de costo ya existe.';
+        RETURN v_mensaje;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            -- Crear un nuevo centro de costo
+            v_id_centro_costo := seq_centro_costo.NEXTVAL;
+            INSERT INTO CENTRO_COSTOS (ID_CentroCosto, Nombre) VALUES (v_id_centro_costo, p_nombre_centro_costo);
+            
+            -- Crear un nuevo presupuesto relacionado al centro de costo
+            v_id_presupuesto := TO_CHAR(seq_presupuesto.NEXTVAL);
+            INSERT INTO PRESUPUESTO (ID_Presupuesto, ID_CentroCosto, saldoComprometido, inicioPeriodo, finPeriodo, Total) 
+            VALUES (v_id_presupuesto, v_id_centro_costo, 0, p_inicio_periodo, p_fin_periodo, p_total);
+            
+            v_mensaje := 'Centro de costo y presupuesto creado con éxito.';
+            RETURN v_mensaje;
+    END;
+END;
 
 
     
+DECLARE
+    v_mensaje VARCHAR2(100);
+BEGIN
+    v_mensaje := crear_centro_costo_y_presupuesto('HHRR', DATE '2022-01-01', DATE '2022-01-31', 1000);
+    DBMS_OUTPUT.PUT_LINE(v_mensaje);
+END;
 
 
 
+CREATE OR REPLACE FUNCTION insertar_usuario (
+    p_user IN VARCHAR2,
+    p_pass IN VARCHAR2,
+    p_rol IN VARCHAR2,
+    p_id_centroCosto IN NUMBER
+) RETURN VARCHAR2
+AS
+    v_count NUMBER;
+BEGIN
+    -- Verificar si el usuario ya existe
+    SELECT COUNT(*)
+    INTO v_count
+    FROM USUARIOS
+    WHERE USER_NAME = p_user;
 
+    -- Si el usuario no existe, proceder a insertar
+    IF v_count = 0 THEN
+        INSERT INTO USUARIOS (ID_USER, USER_NAME, PASS, ROL, ID_CentroCosto)
+        VALUES (usuario_seq.NEXTVAL, p_user, p_pass, p_rol, p_id_centroCosto);
 
-
+        RETURN 'Usuario insertado correctamente';
+    ELSE
+        RETURN 'El usuario ya existe';
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN 'Error al insertar el usuario';
+END;
  
- 
+CREATE OR REPLACE FUNCTION validar_usuario (
+    p_user IN VARCHAR2,
+    p_pass IN VARCHAR2
+) RETURN NUMBER
+AS
+    v_exists NUMBER;
+BEGIN
+    SELECT COUNT(*)
+    INTO v_exists
+    FROM USUARIOS
+    WHERE USER_NAME = p_user AND PASS = p_pass;
+
+    IF v_exists > 0 THEN
+        RETURN 1; -- TRUE
+    ELSE
+        RETURN 0; -- FALSE
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error al validar usuario: ' || SQLERRM);
+        RETURN 0; -- En caso de error, también retornar FALSE
+END;
 
 
 
