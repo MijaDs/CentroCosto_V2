@@ -32,7 +32,7 @@ CREATE TABLE PRESUPUESTO (
 );
 
 ALTER TABLE PRESUPUESTO ADD CONSTRAINT PR_PK PRIMARY KEY(ID_Presupuesto);
-
+ALTER TABLE PRESUPUESTO ADD CONSTRAINT CCFK_fK FOREIGN KEY(ID_CentroCosto) REFERENCES CENTRO_COSTOS(ID_CentroCosto);
 
 //300
 Create table RUBROS (
@@ -101,6 +101,7 @@ ALTER TABLE USUARIOS ADD CONSTRAINT ID_CC_FK FOREIGN KEY (ID_CentroCosto) REFERE
 CREATE SEQUENCE usuario_seq START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE;
 CREATE SEQUENCE seq_centro_costo START WITH 101 INCREMENT BY 1;
 CREATE SEQUENCE seq_presupuesto START WITH 201 INCREMENT BY 1;
+
 CREATE SEQUENCE seq_rubro START WITH 301 INCREMENT BY 1;
 CREATE SEQUENCE seq_desglose_mensual START WITH 401 INCREMENT BY 1;
 CREATE SEQUENCE seq_compra START WITH 501 INCREMENT BY 1;
@@ -253,32 +254,33 @@ EXCEPTION
         RETURN 'Error al insertar el usuario';
 END;
  
-CREATE OR REPLACE FUNCTION validar_usuario (
-    p_user IN VARCHAR2,
-    p_pass IN VARCHAR2
-) RETURN NUMBER
+ 
+CREATE TYPE usuario AS OBJECT (
+  id_user NUMBER,
+  user_name VARCHAR2(50),
+  pass VARCHAR2(50),
+  rol VARCHAR2(50),
+  id_centro_costo NUMBER,
+  centro_costo_nombre VARCHAR2(100)
+);
+
+ 
+ 
+CREATE OR REPLACE FUNCTION validar_usuario(p_user IN VARCHAR2, p_pass IN VARCHAR2)
+  RETURN NUMBER
 AS
-    v_exists NUMBER;
+  v_count NUMBER;
 BEGIN
-    SELECT COUNT(*)
-    INTO v_exists
-    FROM USUARIOS
-    WHERE USER_NAME = p_user AND PASS = p_pass;
-
-    IF v_exists > 0 THEN
-        RETURN 1; -- TRUE
-    ELSE
-        RETURN 0; -- FALSE
-    END IF;
-EXCEPTION
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('Error al validar usuario: ' || SQLERRM);
-        RETURN 0; -- En caso de error, también retornar FALSE
-END;
-
-
-
-
+  SELECT COUNT(*) INTO v_count
+  FROM USUARIOS
+  WHERE USER_NAME = p_user AND PASS = p_pass;
+  
+  IF v_count = 1 THEN
+    RETURN 1; -- usuario y contraseña válidos
+  ELSE
+    RETURN 0; -- usuario y contraseña no válidos
+  END IF;
+END
 
 
 

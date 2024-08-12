@@ -83,19 +83,20 @@
             <version>0.52</version>
         </dependency>
         
-      
-        
-        
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId> <!-- Agrega la versión adecuada -->
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
+        
+        
+        
         
 
         <dependency>
             <groupId>com.oracle.database.jdbc</groupId>
             <artifactId>ojdbc11</artifactId>
-            <scope>runtime</scope>
+            <version>21.9.0.0</version>
+            <type>jar</type>
         </dependency>
         
        
@@ -115,7 +116,41 @@
             <artifactId>hibernate-core</artifactId>
             <version>6.5.2.Final</version> <!-- Usa la versión adecuada -->
         </dependency>
-        
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-commons</artifactId>
+            <version>3.3.2</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jdbc</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>6.1.11</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>6.1.11</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>1.2.6</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-jdbc</artifactId>
+            <version>3.1.12</version>
+            <type>jar</type>
+        </dependency>
     </dependencies>
     <repositories>
         <repository>
@@ -126,7 +161,7 @@
             <id>central</id>
             <url>https://repo.maven.apache.org/maven2</url>
         </repository>
-        
+       
         
         
     </repositories>

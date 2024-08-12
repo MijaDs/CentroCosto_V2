@@ -1,12 +1,11 @@
 package com.CentroCosto;
 
-import com.CentroCosto.Repositories.CentroCostoRepo;
-import com.CentroCosto.domain.centroCosto;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.data.jdbc.repository.config.EnableJdbcRepositories;
 
 @SpringBootApplication
+@EnableJdbcRepositories
 public class CentroCostoApplication {
 
 	public static void main(String[] args) {

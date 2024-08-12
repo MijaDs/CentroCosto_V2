@@ -4,21 +4,14 @@
  */
 package com.CentroCosto.controller;
 
+import com.CentroCosto.domain.CentroCosto;
 import com.CentroCosto.domain.Usuario;
-import com.CentroCosto.service.UsuarioService;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import org.springframework.ui.Model;
+import com.CentroCosto.impl.UsuarioServiceImpl;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 
 /**
@@ -29,12 +22,17 @@ import org.springframework.web.servlet.ModelAndView;
 public class LoginController {
 
     @Autowired
-    private UsuarioService usuarioService;
+    private UsuarioServiceImpl usuarioService;
 
     @PostMapping("/Login")
     public ModelAndView login(@RequestParam("username") String username, @RequestParam("password") String password) {
-        if (usuarioService.validarUsuario(username, password)) {
-            // Si el usuario es válido, redirigir a la página principal
+        boolean resultado = usuarioService.validarUsuario(username, password);
+        Usuario resRol = usuarioService.getUsuarioRol(username);
+        if (resultado&& resRol!= null) {
+            String rol = resRol.getRol();
+            CentroCosto centro = resRol.getCentroCosto();
+            int idCentro = centro.getID_CENTROCOSTO();
+            System.out.println(rol+" " +idCentro);
             return new ModelAndView("redirect:templates/centro/centroViews");
         } else {
             // Si el usuario no es válido, mostrar un mensaje de error

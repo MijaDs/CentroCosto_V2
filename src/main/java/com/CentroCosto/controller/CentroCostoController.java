@@ -3,7 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package com.CentroCosto.controller;
-import com.CentroCosto.service.CentroCostoService;
+import com.CentroCosto.impl.CentroCostoServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,9 +17,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/centroCosto")
 public class CentroCostoController {
     @Autowired
-    private CentroCostoService centroCostoService;
+    private CentroCostoServiceImpl centroCostoService;
     @PostMapping
     public String agregarCentroCosto(@RequestBody String nombre){
         return centroCostoService.agregarCentroCosto(nombre, 0);
     }
+    
+    
 }

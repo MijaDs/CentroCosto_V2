@@ -4,10 +4,42 @@
  */
 package com.CentroCosto.domain;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.io.Serializable;
+import java.sql.Date;
+import lombok.Data;
+
 /**
  *
  * @author mija2
  */
-public class Presupuesto {
-    
+@Data
+@Entity
+@Table(name="PRESUPUESTO")
+public class Presupuesto implements Serializable{
+    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "ID_Presupuesto")
+    private Long idPresupuesto;
+
+    @Column(name = "ID_CentroCosto")
+    private Long idCentroCosto;
+
+    @Column(name = "saldoComprometido")
+    private Double saldoComprometido;
+
+    @Column(name = "inicioPeriodo")
+    private Date inicioPeriodo;
+
+    @Column(name = "finPeriodo")
+    private Date finPeriodo;
+
+    @Column(name = "Total")
+    private Double total;
 }
