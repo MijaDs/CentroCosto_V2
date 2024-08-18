@@ -12,6 +12,6 @@ import com.CentroCosto.domain.Usuario;
  */
 public interface UsuarioService {
     boolean validarUsuario(String username, String password);
-    Usuario getUsuarioRol(String username);
+    Usuario getUsuarioDatos(String username);
     
 }

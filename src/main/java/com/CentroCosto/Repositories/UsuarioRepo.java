@@ -17,16 +17,19 @@ import org.springframework.data.repository.query.Param;
  * @author mija2
  */
 @SpringBootApplication
-public interface UsuarioRepo extends JpaRepository<Usuario, Integer> {
+public interface UsuarioRepo extends JpaRepository<Usuario, Long> {
 
     @Query(value = "SELECT validar_usuario(:p_user, :p_pass) FROM dual", nativeQuery = true)
     Integer validarUsuario(@Param("p_user") String user, @Param("p_pass") String password);
 
-    @Query(value = "BEGIN :result := FN_Rol_Centro(:p_user); END;", nativeQuery = true)
-    Usuario getUsuarioRol(@Param("p_user") String user);
+    @Query(value = "SELECT FN_DATOS_USUARIO(:p_user); END;", nativeQuery = true)
+    Usuario getUsuarioDatos(@Param("p_user") String user);
 
     @Procedure(procedureName = "INCERTAR_USUARIO")
     String incertarUsuario(@Param("username") String username, @Param("password") String password, @Param("rol") String rol, @Param("id_centroCosto") int id_centroCosto);
+    
+    
+    
 }
 
 //DECLARE

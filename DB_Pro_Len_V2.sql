@@ -254,18 +254,8 @@ EXCEPTION
         RETURN 'Error al insertar el usuario';
 END;
  
- 
-CREATE TYPE usuario AS OBJECT (
-  id_user NUMBER,
-  user_name VARCHAR2(50),
-  pass VARCHAR2(50),
-  rol VARCHAR2(50),
-  id_centro_costo NUMBER,
-  centro_costo_nombre VARCHAR2(100)
-);
 
- 
- 
+
 CREATE OR REPLACE FUNCTION validar_usuario(p_user IN VARCHAR2, p_pass IN VARCHAR2)
   RETURN NUMBER
 AS
@@ -276,12 +266,58 @@ BEGIN
   WHERE USER_NAME = p_user AND PASS = p_pass;
   
   IF v_count = 1 THEN
-    RETURN 1; -- usuario y contraseña válidos
+    RETURN 1; 
   ELSE
-    RETURN 0; -- usuario y contraseña no válidos
+    RETURN 0; 
   END IF;
-END
+END;
+
+select validar_usuario('Admin','Pass') from DUAL;
+
+CREATE OR REPLACE FUNCTION FN_DATOS_USUARIO(p_user IN VARCHAR2)
+  RETURN USUARIOS%ROWTYPE
+AS
+  v_usuario USUARIOS%ROWTYPE;
+BEGIN
+  SELECT ID_USER ,USER_NAME, ROL,PASS, ID_CENTROCOSTO INTO v_usuario
+  FROM USUARIOS
+  WHERE USER_NAME = p_user;
+  RETURN v_usuario;
+END;
+
+DECLARE
+  v_usuario USUARIOS%ROWTYPE;
+BEGIN
+  v_usuario := FN_Rol_Centro('Admin');
+  DBMS_OUTPUT.PUT_LINE('Rol: ' || v_usuario.ROL);
+  DBMS_OUTPUT.PUT_LINE('Centro de costo: ' || v_usuario.ID_CentroCosto);
+END;
+
+CREATE OR REPLACE PROCEDURE obtener_datos_Centro(
+    p_id_centro IN NUMBER, 
+    p_cursor OUT SYS_REFCURSOR
+) AS
+BEGIN
+    OPEN p_cursor FOR
+    SELECT 
+        c.ID_CentroCosto,
+        c.Nombre AS CentroNombre,
+        p.ID_Presupuesto,
+        p.saldo_Comprometido,
+        p.inicio_Periodo,
+        p.fin_Periodo,
+        p.Total
+    FROM 
+        CENTRO_COSTOS c
+    LEFT JOIN 
+        PRESUPUESTO p ON c.ID_CentroCosto = p.ID_CentroCosto
+    WHERE 
+        c.ID_CentroCosto = p_id_centro;
+END;
+
+select obtener_datos_Centro(101,:p_curor) from dual;
 
 
 
 
+select * from usuarios;

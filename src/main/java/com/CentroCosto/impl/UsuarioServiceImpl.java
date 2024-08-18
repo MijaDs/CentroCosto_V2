@@ -33,8 +33,8 @@ public class UsuarioServiceImpl implements UsuarioService {
         return res;
     }
     @Override
-    public Usuario getUsuarioRol(String user) {
-        return usuarioRepo.getUsuarioRol(user);
+    public Usuario getUsuarioDatos(String user) {
+        return usuarioRepo.getUsuarioDatos(user);
     }
   
 

@@ -26,20 +26,20 @@ public class Presupuesto implements Serializable{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ID_Presupuesto")
-    private Long idPresupuesto;
+    private String idPresupuesto;
 
     @Column(name = "ID_CentroCosto")
-    private Long idCentroCosto;
+    private int idCentroCosto;
 
-    @Column(name = "saldoComprometido")
-    private Double saldoComprometido;
+    @Column(name = "saldo_Comprometido")
+    private float saldoComprometido;
 
-    @Column(name = "inicioPeriodo")
+    @Column(name = "inicio_Periodo")
     private Date inicioPeriodo;
 
-    @Column(name = "finPeriodo")
+    @Column(name = "fin_Periodo")
     private Date finPeriodo;
 
     @Column(name = "Total")
-    private Double total;
+    private int total;
 }
