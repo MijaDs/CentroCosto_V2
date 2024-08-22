@@ -80,8 +80,6 @@ CREATE TABLE PERMISOS_COMPRA(
 ALTER TABLE PERMISOS_COMPRA ADD CONSTRAINT PC_PK PRIMARY KEY (ID_Permiso);
 ALTER TABLE PERMISOS_COMPRA ADD CONSTRAINT RUPC_FK FOREIGN KEY (ID_Rubro) REFERENCES RUBROS (ID_Rubro);
 
-
-
 CREATE TABLE USUARIOS (
     ID_USER NUMBER,
     USER_NAME VARCHAR2(20),
@@ -172,9 +170,6 @@ FROM PRESUPUESTO;
 
 
 
-
-
-
 -----------------------------------------------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION crear_centro_costo_y_presupuesto(
@@ -212,7 +207,6 @@ BEGIN
     END IF;
 END;
 
-
 CREATE OR REPLACE FUNCTION insertar_usuario (
     p_user IN VARCHAR2,
     p_pass IN VARCHAR2,
@@ -238,39 +232,8 @@ EXCEPTION
     WHEN OTHERS THEN
         RETURN 'Error al insertar el usuario';
 END;
- 
 
-
-CREATE OR REPLACE FUNCTION validar_usuario(p_user IN VARCHAR2, p_pass IN VARCHAR2)
-  RETURN NUMBER
-AS
-  v_sql VARCHAR2(4000);
-  v_count NUMBER;
-BEGIN
-  v_sql := 'SELECT COUNT(*) FROM USUARIOS WHERE USER_NAME = :p_user AND PASS = :p_pass';
-  EXECUTE IMMEDIATE v_sql INTO v_count USING p_user, p_pass;
-  
-  IF v_count = 1 THEN
-    RETURN 1; 
-  ELSE
-    RETURN 0; 
-  END IF;
-END;
-
-
-
-CREATE OR REPLACE FUNCTION FN_DATOS_USUARIO(V_user IN NUMBER)
-  RETURN USUARIOS%ROWTYPE
-AS
-  v_usuario USUARIOS%ROWTYPE;
-BEGIN
-  SELECT ID_USER ,USER_NAME, ROL,PASS, ID_CENTROCOSTO INTO v_usuario
-  FROM USUARIOS
-  WHERE ID_USER = V_user;
-  RETURN v_usuario;
-END;
-
-//funcion para extaer datos centro_costo row%type;
+//funcion para extaer datos centro_costo row%type
 
 CREATE OR REPLACE FUNCTION obtener_datos_Centro(
     p_id_centro IN NUMBER
@@ -296,6 +259,32 @@ BEGIN
     RETURN Resultado;
 END;
 
+CREATE OR REPLACE FUNCTION validar_usuario(p_user IN VARCHAR2, p_pass IN VARCHAR2)
+  RETURN NUMBER
+AS
+  v_sql VARCHAR2(4000);
+  v_count NUMBER;
+BEGIN
+  v_sql := 'SELECT COUNT(*) FROM USUARIOS WHERE USER_NAME = :p_user AND PASS = :p_pass';
+  EXECUTE IMMEDIATE v_sql INTO v_count USING p_user, p_pass;
+  
+  IF v_count = 1 THEN
+    RETURN 1; 
+  ELSE
+    RETURN 0; 
+  END IF;
+END;
+
+CREATE OR REPLACE FUNCTION FN_DATOS_USUARIO(V_user IN NUMBER)
+  RETURN USUARIOS%ROWTYPE
+AS
+  v_usuario USUARIOS%ROWTYPE;
+BEGIN
+  SELECT ID_USER ,USER_NAME, ROL,PASS, ID_CENTROCOSTO INTO v_usuario
+  FROM USUARIOS
+  WHERE ID_USER = V_user;
+  RETURN v_usuario;
+END;
 
 CREATE OR REPLACE FUNCTION verificar_presupuesto(
     p_id_presupuesto IN VARCHAR2,
@@ -305,13 +294,13 @@ CREATE OR REPLACE FUNCTION verificar_presupuesto(
     v_saldo_comprometido NUMBER;
     resultado VARCHAR2(20);
 BEGIN
-    -- Obtener el Total y saldoComprometido del presupuesto
+    
     SELECT Total, saldo_Comprometido
     INTO v_total, v_saldo_comprometido
     FROM PRESUPUESTO
     WHERE ID_CENTROCOSTO = p_id_presupuesto;
 
-    -- Verificar las condiciones
+    
     IF v_total > 0 THEN
         IF p_valor <= v_total THEN
             resultado := 'ACEPTADO';
@@ -332,31 +321,6 @@ EXCEPTION
         RETURN 'PRESUPUESTO NO ENCONTRADO';
     WHEN OTHERS THEN
         RETURN 'ERROR';
-END;
-
-
-
-
-CREATE OR REPLACE PROCEDURE sp_insert_rubro(
-    p_descripción IN RUBROS.descripción%TYPE,
-    p_monto IN RUBROS.monto%TYPE,
-    p_mensaje OUT VARCHAR2
-) AS
-    v_sql VARCHAR2(200);
-    v_count NUMBER;
-    v_id_rubro RUBROS.id_rubro%TYPE;
-BEGIN
-    v_sql := 'SELECT COUNT(*) FROM RUBROS WHERE Descripción = :p_descripción';
-    EXECUTE IMMEDIATE v_sql INTO v_count USING p_descripción;
-
-    IF v_count > 0 THEN
-        p_mensaje := 'No se puede agregar, la descripción ya existe';
-    ELSE
-        v_id_rubro := SEQ_RUBRO.NEXTVAL;
-        v_sql := 'INSERT INTO RUBROS (ID_RUBRO, Descripción, Monto) VALUES (:v_id_rubro, :p_descripción, :p_monto)';
-        EXECUTE IMMEDIATE v_sql USING v_id_rubro, p_descripción, p_monto;
-        p_mensaje := 'Rubro agregado correctamente';
-    END IF;
 END;
 
 CREATE OR REPLACE FUNCTION FN_INFO_RUBRO(ID_RUBRO VARCHAR2)
@@ -398,96 +362,111 @@ BEGIN
       RAISE_APPLICATION_ERROR(-20002, 'Error al obtener datos del RUBRO: ' || SQLERRM);
   END;
   
-  RETURN Resultado;
+  RETURN RESULTADO;
 END;
 
 CREATE OR REPLACE FUNCTION FN_INFO_COMPRA(COD IN NUMBER)
 RETURN COMPRA%ROWTYPE
 AS
     v_sql VARCHAR2(4000);
-    Resultado COMPRA%ROWTYPE;
+    RESULTADO COMPRA%ROWTYPE;
 BEGIN 
-    V_SQL := 'SELECT COD_COMPRA,CANTIDAD,MONTO,ID_RUBRO,ID_USUARIO FROM COMPRA WHERE COD_COMPRA = :COD';
-    EXECUTE IMMEDIATE V_SQL INTO RESULTADO USING COD;
-    EXCEPTION 
-        WHEN NO_DATA_FOUND THEN
-            RAISE_APPLICATION_ERROR(-20001, 'No se encontraron datos de la compra ' || COD);
-        WHEN OTHERS THEN
-            RAISE_APPLICATION_ERROR(-20002, 'Error al obtener datos de la compra: ' || SQLERRM);
+    -- Se deben asignar las columnas individualmente al usar EXECUTE IMMEDIATE
+    V_SQL := 'SELECT COD_COMPRA, CANTIDAD, MONTO, ID_RUBRO, ID_USUARIO FROM COMPRA WHERE COD_COMPRA = :COD';
+    
+    EXECUTE IMMEDIATE V_SQL 
+        INTO RESULTADO.COD_COMPRA, RESULTADO.CANTIDAD, RESULTADO.MONTO, RESULTADO.ID_RUBRO, RESULTADO.ID_USUARIO 
+        USING COD;
+    
     RETURN RESULTADO;
+EXCEPTION 
+    WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20001, 'No se encontraron datos de la compra ' || COD);
+    WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Error al obtener datos de la compra: ' || SQLERRM);
 END;
 
-
-SELECT FN_INFO_RUBRO('302') FROM DUAL;
-
-DECLARE
-    MENSAJE VARCHAR2(100);
-BEGIN 
-    MENSAJE := verificar_presupuesto(101, 30);
-    DBMS_OUTPUT.PUT_LINE('Estado: ' || MENSAJE);
-END;
-
-CREATE OR REPLACE PROCEDURE REALIZAR_COMPRA(
-    p_id_usuario NUMBER,
-    p_id_rubro VARCHAR2,
-    p_cantidad NUMBER,
+CREATE OR REPLACE PROCEDURE sp_insert_rubro(
+    p_descripción IN RUBROS.descripción%TYPE,
+    p_monto IN RUBROS.monto%TYPE,
     p_mensaje OUT VARCHAR2
-)
-AS
-    v_usuario USUARIOS%ROWTYPE;
-    v_rubro RUBROS%ROWTYPE;
-    v_presupuesto PRESUPUESTO%ROWTYPE;
-    v_monto NUMBER;
-    v_estado VARCHAR2(20);
+) AS
+    v_sql VARCHAR2(200);
+    v_count NUMBER;
+    v_id_rubro RUBROS.id_rubro%TYPE;
 BEGIN
-    v_usuario := FN_DATOS_USUARIO(p_id_usuario);
-    v_rubro := FN_INFO_RUBRO(p_id_rubro);
-    v_monto := v_rubro.MONTO * p_cantidad;
-    v_estado := verificar_presupuesto(v_usuario.ID_CENTROCOSTO, v_monto);
-    IF v_estado = 'ACEPTADO' THEN
-        
-        INSERT INTO COMPRA (COD_COMPRA, CANTIDAD, MONTO, ID_RUBRO, ID_USUARIO)
-        VALUES (seq_compra.NEXTVAL, p_cantidad, v_monto, v_rubro.ID_RUBRO, p_id_usuario);
-        
-        p_mensaje := 'Compra realizada con éxito';
-    ELSIF v_estado = 'EXCEDIDO' THEN
-        INSERT INTO COMPRA (COD_COMPRA, CANTIDAD, MONTO, ID_RUBRO, ID_USUARIO)
-            VALUES (seq_compra.NEXTVAL, p_cantidad, v_monto, v_rubro.ID_RUBRO, p_id_usuario);
-        p_mensaje := 'Compra excedida, no se puede realizar';
+    v_sql := 'SELECT COUNT(*) FROM RUBROS WHERE Descripción = :p_descripción';
+    EXECUTE IMMEDIATE v_sql INTO v_count USING p_descripción;
+
+    IF v_count > 0 THEN
+        p_mensaje := 'No se puede agregar, la descripción ya existe';
     ELSE
-        p_mensaje := 'Compra denegada, saldo comprometido insuficiente';
+        v_id_rubro := SEQ_RUBRO.NEXTVAL;
+        v_sql := 'INSERT INTO RUBROS (ID_RUBRO, Descripción, Monto) VALUES (:v_id_rubro, :p_descripción, :p_monto)';
+        EXECUTE IMMEDIATE v_sql USING v_id_rubro, p_descripción, p_monto;
+        p_mensaje := 'Rubro agregado correctamente';
     END IF;
 END;
 
+CREATE OR REPLACE PROCEDURE REALIZAR_COMPRA(
+    p_id_usuario IN USUARIOS.ID_USER%TYPE,
+    p_id_rubro IN RUBROS.id_rubro%TYPE,
+    p_cantidad NUMBER,
+    p_mensaje OUT VARCHAR2
+)
+AS 
+    v_sql VARCHAR2(300);
+    v_usuario Usuarios%rowtype;
+    v_compra COMPRA%ROWTYPE;
+    v_rubro RUBROS%ROWTYPE;
+    codigo number;
+    v_monto NUMBER;
+    v_estado VARCHAR2(20);
+   
+BEGIN
+
+    v_usuario := FN_DATOS_USUARIO(p_id_usuario);
+    
+    v_rubro := FN_INFO_RUBRO(p_id_rubro);
+    v_monto := v_rubro.MONTO * p_cantidad;
+    codigo  :=seq_compra.NEXTVAL;
+
+    v_sql := 'INSERT INTO COMPRA (COD_COMPRA, CANTIDAD, MONTO, ID_RUBRO, ID_USUARIO) ' ||
+             'VALUES (:codigo, :p_cantidad, :v_monto, :v_rubro., :v_usuario)' ;
+    
+    EXECUTE IMMEDIATE v_sql INTO v_compra USING p_id_usuario;
+
+    -- Verificar presupuesto
+    v_estado := verificar_presupuesto(v_usuario.ID_CENTROCOSTO, v_monto);
+    DBMS_OUTPUT.PUT_LINE(v_estado);
+    
+    -- Pasar el mensaje de estado
+    p_mensaje := v_estado;
+END;
+
 DECLARE
+ 
+    v_mensaje VARCHAR2(120);
+BEGIN
+    -- Llamada al procedimiento
+    REALIZAR_COMPRA(6, '306', 7, v_mensaje);
+
+    DBMS_OUTPUT.PUT_LINE('Estado: ' || v_mensaje);
+END;
+
+
+----====----=====999990000000000098888888777666665544
     V_USUARIO USUARIOS%ROWTYPE;
     V_RUBRO RUBROS%ROWTYPE;
     V_PRESUPUESTO PRESUPUESTO%ROWTYPE;
-    MENSAJE VARCHAR2(100);
-BEGIN 
-    V_USUARIO := FN_DATOS_USUARIO(7);
+
+V_USUARIO := FN_DATOS_USUARIO(7);
     DBMS_OUTPUT.PUT_LINE(V_USUARIO.ID_CENTROCOSTO);
     V_RUBRO := FN_INFO_RUBRO('302');
     DBMS_OUTPUT.PUT_LINE(V_RUBRO.MONTO);
     MENSAJE := verificar_presupuesto(V_USUARIO.ID_CENTROCOSTO, V_RUBRO.MONTO);
     DBMS_OUTPUT.PUT_LINE('Estado: ' || MENSAJE);
     REALIZAR_COMPRA(V_USUARIO.ID_USER,V_RUBRO.ID_RUBRO,3,MENSAJE);
-END;
-
-
-
-
-
-
-
-V_ESTADO := VERIFICAR_PRESUPUESTO(V_USUARIO.ID_CENTROCOSTO,V_MONTO);
-    DBMS_OUTPUT.PUT_LINE('BRONCA '||V_ESTADO);
-    IF V_ESTADO IN ('Aceptado','Excedido') THEN
-        V_SQL := 'INSERT INTO COMPRA (COD_COMPRA, CANTIDAD,MONTO,ID_RUBRO,ID_USUARIO) VALUES (seq_compra.NEXTVAL,:CANTIDAD,:V_MONTO,:ID_RUBRO,:ID_USER)';
-        EXECUTE IMMEDIATE V_SQL USING CANTIDAD, V_MONTO, V_RUBRO.ID_RUBRO, V_USUARIO.ID_USER;
-    ELSE 
-        p_mensaje := V_ESTADO;
-    END IF;
 
 
 
@@ -538,7 +517,7 @@ END;
 DECLARE
     v_result VARCHAR2(100);
 BEGIN
-    v_result := insertar_usuario('USER12','PASS','USER',123);
+    v_result := insertar_usuario('USER13','PASS','USER',123);
     DBMS_OUTPUT.PUT_LINE(v_result);
 END;
 
@@ -586,7 +565,11 @@ END;
 DECLARE
     v_mensaje VARCHAR2(200);
 BEGIN
-    sp_insert_rubro('Labtop', 50000, v_mensaje);
+    sp_insert_rubro('Boligrafos', 1000, v_mensaje);
+    sp_insert_rubro('Targetas', 10000, v_mensaje);
+    sp_insert_rubro('Crayolas ', 14000, v_mensaje);
+    sp_insert_rubro('Borradores', 4000, v_mensaje);
+    sp_insert_rubro('Pizarras', 111000, v_mensaje);
     DBMS_OUTPUT.PUT_LINE(v_mensaje);
 END;
  
