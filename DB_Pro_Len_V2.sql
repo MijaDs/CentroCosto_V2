@@ -72,7 +72,7 @@ alter table compra add conStraint fk_USE FOREIGN KEY (ID_Usuario) REFERENCES USU
 //600
 CREATE TABLE PERMISOS_COMPRA(
     ID_Permiso NUMBER DEFAULT seq_permiso.NEXTVAL,
-    ID_USUARIO NUMBER,
+    ID_CENTRO NUMBER,
     Cod_Compa number,
     fecha date,
     Estado varchar2(4));
@@ -292,9 +292,9 @@ CREATE OR REPLACE FUNCTION verificar_presupuesto(
 ) RETURN VARCHAR2 IS
     v_total NUMBER;
     v_saldo_comprometido NUMBER;
-    resultado VARCHAR2(20);
+    resultado VARCHAR2(120);
 BEGIN
-    
+
     SELECT Total, saldo_Comprometido
     INTO v_total, v_saldo_comprometido
     FROM PRESUPUESTO
@@ -314,13 +314,16 @@ BEGIN
             resultado := 'EXCEDIDO';
         END IF;
     END IF;
-
+    
     RETURN resultado;
-EXCEPTION
+    EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        RETURN 'PRESUPUESTO NO ENCONTRADO';
+        resultado := 'PRESUPUESTO NO ENCONTRADO';
+        RETURN resultado;
     WHEN OTHERS THEN
         RETURN 'ERROR';
+    RETURN resultado;
+
 END;
 
 CREATE OR REPLACE FUNCTION FN_INFO_RUBRO(ID_RUBRO VARCHAR2)
@@ -371,7 +374,6 @@ AS
     v_sql VARCHAR2(4000);
     RESULTADO COMPRA%ROWTYPE;
 BEGIN 
-    -- Se deben asignar las columnas individualmente al usar EXECUTE IMMEDIATE
     V_SQL := 'SELECT COD_COMPRA, CANTIDAD, MONTO, ID_RUBRO, ID_USUARIO FROM COMPRA WHERE COD_COMPRA = :COD';
     
     EXECUTE IMMEDIATE V_SQL 
@@ -424,35 +426,76 @@ AS
     v_estado VARCHAR2(20);
    
 BEGIN
-
     v_usuario := FN_DATOS_USUARIO(p_id_usuario);
-    
     v_rubro := FN_INFO_RUBRO(p_id_rubro);
     v_monto := v_rubro.MONTO * p_cantidad;
     codigo  :=seq_compra.NEXTVAL;
-
     v_sql := 'INSERT INTO COMPRA (COD_COMPRA, CANTIDAD, MONTO, ID_RUBRO, ID_USUARIO) ' ||
              'VALUES (:codigo, :p_cantidad, :v_monto, :v_rubro., :v_usuario)' ;
-    
     EXECUTE IMMEDIATE v_sql INTO v_compra USING p_id_usuario;
-
-    -- Verificar presupuesto
     v_estado := verificar_presupuesto(v_usuario.ID_CENTROCOSTO, v_monto);
     DBMS_OUTPUT.PUT_LINE(v_estado);
-    
-    -- Pasar el mensaje de estado
     p_mensaje := v_estado;
 END;
 
+
+CREATE OR REPLACE TRIGGER TGR_COMPRA 
+AFTER INSERT ON COMPRA
+FOR EACH ROW
 DECLARE
+    V_ESTADO VARCHAR2(120);
+    V_CENTRO USUARIOS%ROWTYPE;
+    V_SEQ NUMBER;
+BEGIN 
+    V_CENTRO := FN_DATOS_USUARIO(:NEW.ID_USUARIO);
+    V_ESTADO := VERIFICAR_PRESUPUESTO(V_CENTRO.ID_CENTROCOSTO, :NEW.MONTO);
+    V_SEQ := seq_permiso.NEXTVAL;   
+    INSERT INTO PERMISOS_COMPRA(ID_PERMISO,COD_COMPRA,FECHA,ID_CENTRO,ESTADO) 
+    VALUES (V_SEQ,:NEW.COD_COMPRA,SYSTIMESTAMP,V_CENTRO.ID_CENTROCOSTO,V_ESTADO);
+END;
+
+CREATE OR REPLACE TRIGGER TGR_INGRESO_CENTRO
+AFTER INSERT ON CENTRO
+
+
+
+
+
+
+
+
+
+
+
+CREATE OR REPLACE FUNCTION desglose_mensual (
+    p_id_presupuesto IN PRESUPUESTO.ID_Presupuesto%TYPE
+) RETURN SYS_REFCURSOR IS
+    v_cursor SYS_REFCURSOR;
+BEGIN
+    OPEN v_cursor FOR
+    SELECT DM.Mes, DM.PresupuestoAsignado, DM.Total, DM.PresupuestoActual
+    FROM DESGLOSE_MENSUAL_PRESUPUESTO DM
+    WHERE DM.ID_Pesupuesto = p_id_presupuesto
+    ORDER BY DM.Mes;
  
+    RETURN v_cursor;
+END desglose_mensual;
+
+DECLARE
     v_mensaje VARCHAR2(120);
 BEGIN
-    -- Llamada al procedimiento
-    REALIZAR_COMPRA(6, '306', 7, v_mensaje);
+    REALIZAR_COMPRA(5, '306', 2, v_mensaje);
 
-    DBMS_OUTPUT.PUT_LINE('Estado: ' || v_mensaje);
+    DBMS_OUTPUT.PUT_LINE('>>>>>>>>>>>Estado: ' || v_mensaje);
 END;
+
+
+
+
+
+
+
+
 
 
 ----====----=====999990000000000098888888777666665544
@@ -470,16 +513,10 @@ V_USUARIO := FN_DATOS_USUARIO(7);
 
 
 
- REALIZAR_COMPRA(1, '302',6,MENSAJE);
+ REALIZAR_COMPRA(1, '302',23,MENSAJE);
  //MS2 := VERIFICAR_PRESUPUESTO(102,500);
 
-CREATE OR REPLACE TRIGGER TGR_COMPRA 
-BEFORE INSERT ON COMPRA
-FOR EACH ROW
-DECLARE
-    
-BEGIN 
-END;
+
     
     
     
