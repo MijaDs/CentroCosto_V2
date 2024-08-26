@@ -439,6 +439,27 @@ BEGIN
 END;
 
 
+CREATE OR REPLACE FUNCTION actualizar_presupuesto(
+    IdCentroCosto IN NUMBER,
+    IniPeriodo IN DATE,
+    FinPeriodo IN DATE,
+    VTotal IN NUMBER
+) RETURN VARCHAR2 IS
+    v_mensaje VARCHAR2(100);
+BEGIN
+    UPDATE PRESUPUESTO
+    SET inicio_Periodo = IniPeriodo,
+        fin_Periodo = FinPeriodo,
+        Total = VTotal
+    WHERE ID_CentroCosto = IdCentroCosto;
+    IF SQL%ROWCOUNT > 0 THEN
+        v_mensaje := 'Presupuesto actualizado con éxito.';
+    ELSE
+        v_mensaje := 'Presupuesto no encontrado para el Centro de Costo especificado.';
+    END IF;
+    RETURN v_mensaje;
+END;
+
 CREATE OR REPLACE TRIGGER TGR_COMPRA 
 AFTER INSERT ON COMPRA
 FOR EACH ROW
@@ -446,7 +467,7 @@ DECLARE
     V_ESTADO VARCHAR2(120);
     V_CENTRO USUARIOS%ROWTYPE;
     V_COMPRA COMPRA%ROWTYPE;
-    V_PRESUPUESTO PRESUPUESTO%ROWTYPE;
+    V_PRESUPUESTO PRESUPUESTO%RVOWTYPE;
     V_SEQ NUMBER;
     VRES NUMBER;
 BEGIN 
@@ -471,24 +492,62 @@ BEGIN
     END IF;
 END;
 
-CREATE OR REPLACE TRIGGER TGR_DESGLOSE
-AFTER INSERT ON DESGLOSE_MENSUAL_PRESUPUESTO
+
+
+CREATE OR REPLACE TRIGGER TRG_BEFORE_INSERT_CENTRO_COSTO
+BEFORE INSERT ON CENTRO_COSTOS
 FOR EACH ROW
 DECLARE
-    SALDO_ANT NUMBER;
-    ACTUAL NUMBER;
-    V_PRESUPUESTO PRESUPUESTO%ROWTYPE;
-BEGIN 
-    V_PRESUPUESTO:=obtener_datos_Centro(:NEW.ID_PRESUPUESTO);
+    SaldoComp NUMBER;
+    PresTot NUMBER;
+    IdPres VARCHAR2(100);
+    MSJ VARCHAR2(100);
+BEGIN
+    BEGIN
+        SELECT p.ID_Presupuesto, p.saldo_Comprometido, p.Total
+        INTO IdPres, SaldoComp, PresTot
+        FROM PRESUPUESTO p
+        WHERE p.ID_CentroCosto = :NEW.ID_CentroCosto;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RETURN;
+    END;
+ 
+    IF SaldoComp > 0 THEN
+        UPDATE PRESUPUESTO
+        SET Total = Total - SaldoComp,
+            saldo_Comprometido = 0
+        WHERE ID_Presupuesto = IdPres;
+ 
+        MSJ := 'Saldo comprometido descontado del presupuesto antes de insertar el nuevo centro de costo.';
+        DBMS_OUTPUT.PUT_LINE(MSJ);
+    END IF;
+END;
 
     
-
+CREATE OR REPLACE TRIGGER trg_actualizar_presupuesto
+BEFORE UPDATE ON PRESUPUESTO
+FOR EACH ROW
+DECLARE
+    VSaldoComprometido NUMBER;
+BEGIN
+    SELECT saldo_Comprometido
+    INTO VSaldoComprometido
+    FROM PRESUPUESTO
+    WHERE ID_Presupuesto = :OLD.ID_Presupuesto;
+ 
+    IF VSaldoComprometido > 0 THEN
+        :NEW.Total := :NEW.Total - VSaldoComprometido;
+ 
+        :NEW.saldo_Comprometido := 0;
+    END IF;
+END;
     
 
 DECLARE
     MENSAJE VARCHAR2(201);
 BEGIN 
-    REALIZAR_COMPRA(10, 302, 7, MENSAJE);
+    REALIZAR_COMPRA(6, 302, 7, MENSAJE);
     DBMS_OUTPUT.PUT_LINE(MENSAJE);
 END;
 
@@ -538,7 +597,8 @@ END;
 
 
 
-
+ALTER TABLE compra
+MODIFY cantidad number;
 
 
 

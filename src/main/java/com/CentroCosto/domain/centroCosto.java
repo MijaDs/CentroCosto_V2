@@ -9,6 +9,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.io.Serializable;
 import lombok.Data;
 
 /**
@@ -18,8 +19,10 @@ import lombok.Data;
 @Data
 @Entity
 @Table(name="CENTRO_COSTOS")
-public class CentroCosto {
+public class CentroCosto implements Serializable {
+    private static long serialVersionUID =1L;
     @Id
+    @Column(name="ID_CENTROCOSTO")
     private int ID_CENTROCOSTO;
     @Column(name="NOMBRE")
     private String nombre;

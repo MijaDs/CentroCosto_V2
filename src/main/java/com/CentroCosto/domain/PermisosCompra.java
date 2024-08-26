@@ -11,7 +11,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.sql.Date;
@@ -23,27 +22,23 @@ import lombok.Data;
  */
 @Data
 @Entity
-@Table(name="PRESUPUESTO")
-public class Presupuesto implements Serializable{
-    private static final long serialVersionUID = 1L;
+@Table(name="PREMISOS_COMPRA")
+public class PermisosCompra implements Serializable{
+     private static long serialVersionUID =1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID_Presupuesto")
-    private String idPresupuesto;
-
-    @Column(name = "ID_CentroCosto")
-    private int idCentroCosto;
-
-    @Column(name = "saldo_Comprometido")
-    private float saldoComprometido;
-
-    @Column(name = "inicio_Periodo")
-    private Date inicioPeriodo;
-
-    @Column(name = "fin_Periodo")
-    private Date finPeriodo;
-
-    @Column(name = "Total")
-    private int total;
+    @Column(name="ID_PERMISO")
+    private Long idPermiso;
+    @Column (name="COD_COMPRA")
+    private int codCompra;
+    @Column (name="FECHA")
+    private Date fecha;
+    @Column (name="ID_CENTRO")
+    private int idCentro;
+    @Column (name="ESTADO")
+    private String estado;
     
+    @ManyToOne
+    @JoinColumn(name = "ID_CENTROCOSTO", referencedColumnName = "ID_CENTROCOSTO")
+    private CentroCosto centroCosto;
 }
