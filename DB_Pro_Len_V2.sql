@@ -243,11 +243,12 @@ IS
     v_sql VARCHAR2(4000);
     Resultado PRESUPUESTO%ROWTYPE;
 BEGIN
-    v_sql := 'SELECT ID_Presupuesto,ID_CENTROCOSTO,Total,inicio_Periodo,fin_Periodo,saldo_Comprometido
-               FROM 
-                  PRESUPUESTO 
-               WHERE 
-                  ID_CENTROCOSTO = :p_id_centro';
+    v_sql := 'SELECT ID_Presupuesto, ID_CENTROCOSTO, Total, inicio_Periodo, fin_Periodo, saldo_Comprometido, ID_CENTRO_COSTO
+
+           FROM 
+              PRESUPUESTO 
+           WHERE 
+              ID_CENTROCOSTO = :p_id_centro';
     BEGIN 
         EXECUTE IMMEDIATE v_sql INTO Resultado USING p_id_centro;
         EXCEPTION
@@ -299,8 +300,6 @@ BEGIN
     INTO v_total, v_saldo_comprometido
     FROM PRESUPUESTO
     WHERE ID_CENTROCOSTO = p_id_presupuesto;
-
-    
     IF v_total > 0 THEN
         IF p_valor <= v_total THEN
             resultado := 'ACEPTADO';
@@ -313,8 +312,7 @@ BEGIN
         ELSE
             resultado := 'EXCEDIDO';
         END IF;
-    END IF;
-    
+    END IF; 
     RETURN resultado;
     EXCEPTION
     WHEN NO_DATA_FOUND THEN
@@ -323,7 +321,6 @@ BEGIN
     WHEN OTHERS THEN
         RETURN 'ERROR';
     RETURN resultado;
-
 END;
 
 CREATE OR REPLACE FUNCTION FN_INFO_RUBRO(ID_RUBRO VARCHAR2)
@@ -419,7 +416,6 @@ CREATE OR REPLACE PROCEDURE REALIZAR_COMPRA(
 AS 
     v_sql VARCHAR2(300);
     v_usuario Usuarios%rowtype;
-    v_compra COMPRA%ROWTYPE;
     v_rubro RUBROS%ROWTYPE;
     codigo number;
     v_monto NUMBER;
@@ -430,9 +426,9 @@ BEGIN
     v_rubro := FN_INFO_RUBRO(p_id_rubro);
     v_monto := v_rubro.MONTO * p_cantidad;
     codigo  :=seq_compra.NEXTVAL;
-    v_sql := 'INSERT INTO COMPRA (COD_COMPRA, CANTIDAD, MONTO, ID_RUBRO, ID_USUARIO) ' ||
-             'VALUES (:codigo, :p_cantidad, :v_monto, :v_rubro., :v_usuario)' ;
-    EXECUTE IMMEDIATE v_sql INTO v_compra USING p_id_usuario;
+    v_sql := 'INSERT INTO COMPRA (COD_COMPRA, MONTO, ID_RUBRO, ID_USUARIO,CANTIDAD) ' ||
+             'VALUES (:codigo, :v_monto, :p_id_rubro, :p_id_usuario, :p_cantidad)' ;
+    EXECUTE IMMEDIATE v_sql USING codigo,v_monto,p_id_rubro,p_id_usuario,p_cantidad;
     v_estado := verificar_presupuesto(v_usuario.ID_CENTROCOSTO, v_monto);
     DBMS_OUTPUT.PUT_LINE(v_estado);
     p_mensaje := v_estado;
@@ -467,31 +463,28 @@ DECLARE
     V_ESTADO VARCHAR2(120);
     V_CENTRO USUARIOS%ROWTYPE;
     V_COMPRA COMPRA%ROWTYPE;
-    V_PRESUPUESTO PRESUPUESTO%RVOWTYPE;
+    V_PRESUPUESTO PRESUPUESTO%ROWTYPE;
     V_SEQ NUMBER;
     VRES NUMBER;
 BEGIN 
-    
     V_CENTRO := FN_DATOS_USUARIO(:NEW.ID_USUARIO);
     V_ESTADO := VERIFICAR_PRESUPUESTO(V_CENTRO.ID_CENTROCOSTO, :NEW.MONTO);
     V_PRESUPUESTO :=obtener_datos_Centro(V_CENTRO.ID_CENTROCOSTO);
-    
     V_SEQ := seq_permiso.NEXTVAL;   
+    
     INSERT INTO PERMISOS_COMPRA(ID_PERMISO,COD_COMPRA,FECHA,ID_CENTRO,ESTADO) 
     VALUES (V_SEQ,:NEW.COD_COMPRA,SYSTIMESTAMP,V_CENTRO.ID_CENTROCOSTO,V_ESTADO);
-    
-    INSERT INTO DESGLOSE_MENSUAL_PRESUPUESTO(ID_DESGLOSEMENSUAL,ID_PRESUPUESTO,PRESUPUESTOASIGNADO,ID_RUBRO,MES,TOTAL,PRESUPUESTOACTUAL)
-    VALUES(seq_desglose_mensual.NEXTVAL,V_PRESUPUESTO.ID_PRESUPUESTO,V_PRESUPUESTO.TOTAL,:NEW.ID_RUBRO,SYSTIMESTAMP,:NEW.MONTO,V_PRESUPUESTO.TOTAL-:NEW.MONTO);
-    
-    VRES := V_PRESUPUESTO.TOTAL-:NEW.MONTO;
-    
-   IF VRES>0 THEN
-        UPDATE PRESUPUESTO SET TOTAL =  VRES WHERE ID_PRESUPUESTO = V_PRESUPUESTO.ID_PRESUPUESTO;
-    ELSE
-        UPDATE PRESUPUESTO SET TOTAL = 0, SALDO_COMPROMETIDO = VRES WHERE ID_PRESUPUESTO = V_PRESUPUESTO.ID_PRESUPUESTO;
-    END IF;
+    IF V_ESTADO IN ('ACEPTADO','EXEDIDO')THEN
+        INSERT INTO DESGLOSE_MENSUAL_PRESUPUESTO(ID_DESGLOSEMENSUAL,ID_PRESUPUESTO,PRESUPUESTOASIGNADO,ID_RUBRO,MES,TOTAL,PRESUPUESTOACTUAL)
+        VALUES(seq_desglose_mensual.NEXTVAL,V_PRESUPUESTO.ID_PRESUPUESTO,V_PRESUPUESTO.TOTAL,:NEW.ID_RUBRO,SYSTIMESTAMP,:NEW.MONTO,V_PRESUPUESTO.TOTAL-:NEW.MONTO);
+        VRES := V_PRESUPUESTO.TOTAL-:NEW.MONTO;
+        IF VRES>0 THEN
+            UPDATE PRESUPUESTO SET TOTAL =  VRES WHERE ID_PRESUPUESTO = V_PRESUPUESTO.ID_PRESUPUESTO;
+        ELSE
+            UPDATE PRESUPUESTO SET TOTAL = 0, SALDO_COMPROMETIDO = VRES WHERE ID_PRESUPUESTO = V_PRESUPUESTO.ID_PRESUPUESTO;
+        END IF;
+    END IF; 
 END;
-
 
 
 CREATE OR REPLACE TRIGGER TRG_BEFORE_INSERT_CENTRO_COSTO
@@ -547,9 +540,11 @@ END;
 DECLARE
     MENSAJE VARCHAR2(201);
 BEGIN 
-    REALIZAR_COMPRA(6, 302, 7, MENSAJE);
+    REALIZAR_COMPRA(9, 302, 8, MENSAJE);
     DBMS_OUTPUT.PUT_LINE(MENSAJE);
 END;
+
+
 
 
 
@@ -640,16 +635,27 @@ BEGIN
 END;
 
 DECLARE
+
   v_usuario USUARIOS%ROWTYPE;
+
+  V_CENTRO PRESUPUESTO%ROWTYPE;
+
 BEGIN
-  v_usuario := FN_DATOS_USUARIO(5);
+
+  v_usuario := FN_DATOS_USUARIO(6);
+  V_CENTRO := obtener_datos_Centro(v_usuario.ID_CENTROCOSTO);
+
   DBMS_OUTPUT.PUT_LINE(TO_CHAR(v_usuario.ID_USER) || ' - ' || v_usuario.USER_NAME || ' - ' || v_usuario.ROL || ' - ' || v_usuario.PASS || ' - ' || TO_CHAR(v_usuario.ID_CENTROCOSTO));
+
+  DBMS_OUTPUT.PUT_LINE(V_CENTRO.TOTAL);
+
 END;
+
 
 DECLARE
   v_presupuesto PRESUPUESTO%ROWTYPE;
 BEGIN
-  v_presupuesto := obtener_datos_Centro(123);
+  v_presupuesto := obtener_datos_Centro(101);
   DBMS_OUTPUT.PUT_LINE('ID_Presupuesto: ' || v_presupuesto.ID_Presupuesto);
   DBMS_OUTPUT.PUT_LINE('ID_CENTROCOSTO: ' || v_presupuesto.ID_CENTROCOSTO);
   DBMS_OUTPUT.PUT_LINE('inicio_Periodo: ' || v_presupuesto.inicio_Periodo);
