@@ -5,10 +5,7 @@
 package com.CentroCosto.Repositories;
 
 import com.CentroCosto.domain.Rubro;
-import jakarta.persistence.ParameterMode;
 import java.util.List;
-import org.hibernate.annotations.Parameter;
-import org.hibernate.jdbc.Expectation.OutParameter;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.query.Procedure;

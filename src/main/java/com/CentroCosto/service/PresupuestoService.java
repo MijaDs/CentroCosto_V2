@@ -4,16 +4,15 @@
  */
 package com.CentroCosto.service;
 
-import com.CentroCosto.domain.Rubro;
-import java.util.List;
+import com.CentroCosto.domain.Presupuesto;
+import java.sql.Date;
 
 /**
  *
  * @author mija2
  */
-public interface RubroService {
-    Rubro getRubroDatos(String idRubro);
-    void agregarRubro(String descripción, int monto);
-
-    List<Rubro> getRubrosDatos();
+public interface PresupuestoService {
+    
+    String actualizarPresupuesto(Long idCentroCosto, Date iniPeriodo, Date finPeriodo, int vTotal);
+    Presupuesto obtenerDatosCentro(int idCentro);
 }

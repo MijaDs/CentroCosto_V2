@@ -4,16 +4,15 @@
  */
 package com.CentroCosto.service;
 
-import com.CentroCosto.domain.Rubro;
-import java.util.List;
+import com.CentroCosto.domain.Compra;
 
 /**
  *
  * @author mija2
  */
-public interface RubroService {
-    Rubro getRubroDatos(String idRubro);
-    void agregarRubro(String descripción, int monto);
-
-    List<Rubro> getRubrosDatos();
+public interface CompraService {
+    
+    Compra getInfoCompra(Long codCompra);
+    
+    String realizarCompra(Long idUsuario, Long idRubro, int cantidad);
 }

@@ -34,7 +34,7 @@ public class Rubro implements Serializable{
     private int monto;
     
     @OneToMany(mappedBy = "rubro")
-    private List<DesgloceMensualPresupuesto> desglosesMensuales;
+    private List<DesgloseMensualPresupuesto> desglosesMensuales;
     @OneToMany(mappedBy = "rubro")
     private List<Compra> compras;
     

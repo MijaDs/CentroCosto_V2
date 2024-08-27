@@ -23,7 +23,7 @@ import lombok.Data;
 @Data
 @Entity
 @Table(name="DESGLOSE_MENSUAL_PRESUPUESTO")
-public class DesgloceMensualPresupuesto implements Serializable{
+public class DesgloseMensualPresupuesto implements Serializable{
     private static long serialVersionUID =1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

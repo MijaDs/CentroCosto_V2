@@ -4,16 +4,10 @@
  */
 package com.CentroCosto.service;
 
-import com.CentroCosto.domain.Rubro;
-import java.util.List;
-
 /**
  *
  * @author mija2
  */
-public interface RubroService {
-    Rubro getRubroDatos(String idRubro);
-    void agregarRubro(String descripción, int monto);
-
-    List<Rubro> getRubrosDatos();
+public interface DesgloseService {
+    void mostrarDesglose();
 }

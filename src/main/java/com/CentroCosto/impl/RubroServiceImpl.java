@@ -7,14 +7,7 @@ package com.CentroCosto.impl;
 import com.CentroCosto.Repositories.RubroRepo;
 import com.CentroCosto.domain.Rubro;
 import com.CentroCosto.service.RubroService;
-import jakarta.persistence.ParameterMode;
-import jakarta.persistence.StoredProcedureQuery;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

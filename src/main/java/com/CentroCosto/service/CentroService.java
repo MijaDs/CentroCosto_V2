@@ -4,16 +4,14 @@
  */
 package com.CentroCosto.service;
 
-import com.CentroCosto.domain.Rubro;
-import java.util.List;
+import java.math.BigDecimal;
+import java.sql.Date;
 
 /**
  *
  * @author mija2
  */
-public interface RubroService {
-    Rubro getRubroDatos(String idRubro);
-    void agregarRubro(String descripción, int monto);
-
-    List<Rubro> getRubrosDatos();
+public interface CentroService {
+    String agregarCentroCosto(String nombre, int id);
+    String crearCentroCostoYPresupuesto(String nombreCentroCosto, Date inicioPeriodo, Date finPeriodo, BigDecimal total);
 }
