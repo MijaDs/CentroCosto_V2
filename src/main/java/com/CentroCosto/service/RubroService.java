@@ -5,6 +5,7 @@
 package com.CentroCosto.service;
 
 import com.CentroCosto.domain.Rubro;
+import java.util.List;
 
 /**
  *
@@ -12,4 +13,7 @@ import com.CentroCosto.domain.Rubro;
  */
 public interface RubroService {
     Rubro getRubroDatos(String idRubro);
+    void agregarRubro(String descripción, int monto);
+    
+    List<Rubro> getRubrosDatos();
 }
