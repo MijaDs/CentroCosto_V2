@@ -233,7 +233,6 @@ EXCEPTION
         RETURN 'Error al insertar el usuario';
 END;
 
-//funcion para extaer datos centro_costo row%type
 
 CREATE OR REPLACE FUNCTION obtener_datos_Centro(
     p_id_centro IN NUMBER
@@ -344,26 +343,6 @@ BEGIN
     RETURN Resultado;
 END;
 -----------------------
-CREATE OR REPLACE FUNCTION FN_INFO_RUBRO(ID_RUBRO VARCHAR2)
-RETURN RUBROS%ROWTYPE
-AS
-  v_sql VARCHAR2(4000);
-  Resultado RUBROS%ROWTYPE;
-  v_id_rubro RUBROS.ID_RUBRO%TYPE := ID_RUBRO;
-BEGIN
-  v_sql := 'SELECT ID_RUBRO, DESCRIPCIÓN, MONTO FROM RUBROS WHERE ID_RUBRO = :ID_RUBRO';
-  
-  BEGIN
-    EXECUTE IMMEDIATE v_sql INTO Resultado USING v_id_rubro;
-  EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-      RAISE_APPLICATION_ERROR(-20001, 'No se encontraron datos para el RUBRO ' || ID_RUBRO);
-    WHEN OTHERS THEN
-      RAISE_APPLICATION_ERROR(-20002, 'Error al obtener datos del RUBRO: ' || SQLERRM);
-  END;
-  
-  RETURN RESULTADO;
-END;
 
 CREATE OR REPLACE FUNCTION FN_INFO_COMPRA(COD IN NUMBER)
 RETURN COMPRA%ROWTYPE
@@ -407,6 +386,17 @@ BEGIN
     END IF;
 END;
 
+CREATE OR REPLACE FUNCTION get_datos_rubro
+  RETURN SYS_REFCURSOR
+AS
+  cur_datos SYS_REFCURSOR;
+BEGIN
+  OPEN cur_datos FOR
+    SELECT id_rubro, descripción, monto
+    FROM RUBROS;
+  RETURN cur_datos;
+END;
+
 CREATE OR REPLACE PROCEDURE REALIZAR_COMPRA(
     p_id_usuario IN USUARIOS.ID_USER%TYPE,
     p_id_rubro IN RUBROS.id_rubro%TYPE,
@@ -434,7 +424,6 @@ BEGIN
     p_mensaje := v_estado;
 END;
 
-
 CREATE OR REPLACE FUNCTION actualizar_presupuesto(
     IdCentroCosto IN NUMBER,
     IniPeriodo IN DATE,
@@ -455,6 +444,67 @@ BEGIN
     END IF;
     RETURN v_mensaje;
 END;
+
+
+CREATE OR REPLACE FUNCTION mostrar_permisos_compra
+RETURN SYS_REFCURSOR IS
+    v_cursor SYS_REFCURSOR;
+BEGIN
+    OPEN v_cursor FOR
+        SELECT ID_Permiso,Cod_Compra,fecha,ID_Centro, Estado
+        FROM PERMISOS_COMPRA;
+    RETURN v_cursor;
+END;
+
+CREATE OR REPLACE PROCEDURE MOSTRAR_PERMISOS IS
+    v_cursor SYS_REFCURSOR;
+    v_id_permiso NUMBER;
+    v_id_centro NUMBER;
+    v_cod_compra NUMBER;
+    v_fecha DATE;
+    v_estado VARCHAR2(4);
+BEGIN
+    v_cursor := mostrar_permisos_compra;
+    LOOP
+        FETCH v_cursor INTO v_id_permiso, v_id_centro, v_cod_compra, v_fecha, v_estado;
+        EXIT WHEN v_cursor%NOTFOUND;
+        DBMS_OUTPUT.PUT_LINE('ID Permiso: ' || v_id_permiso || ', ID Centro: ' || v_id_centro || ', Cod Compra: ' || v_cod_compra || ', Fecha: ' || v_fecha || ', Estado: ' || v_estado);
+    END LOOP;
+    CLOSE v_cursor;
+END;
+
+CREATE OR REPLACE FUNCTION mostrar_desglose_mensual_presupuesto
+RETURN SYS_REFCURSOR IS
+    v_cursor SYS_REFCURSOR;
+BEGIN
+    OPEN v_cursor FOR
+        SELECT ID_DesgloseMensual, ID_Pesupuesto, PresupuestoAsignado, ID_Rubro, Mes, Total, PresupuestoActual
+        FROM DESGLOSE_MENSUAL_PRESUPUESTO;
+    RETURN v_cursor;
+END;
+
+
+CREATE OR REPLACE PROCEDURE MOSTRAR_DESGLOSE IS
+    v_cursor SYS_REFCURSOR;
+    v_id_desglose_mensual NUMBER;
+    v_id_presupuesto VARCHAR2(100);
+    v_presupuesto_asignado NUMBER;
+    v_id_rubro VARCHAR2(100);
+    v_mes DATE;
+    v_total NUMBER;
+    v_presupuesto_actual NUMBER;
+BEGIN
+    v_cursor := mostrar_desglose_mensual_presupuesto;
+    LOOP
+        FETCH v_cursor INTO v_id_desglose_mensual, v_id_presupuesto, v_presupuesto_asignado, v_id_rubro, v_mes, v_total, v_presupuesto_actual;
+        EXIT WHEN v_cursor%NOTFOUND;
+        DBMS_OUTPUT.PUT_LINE('ID Desglose Mensual: ' || v_id_desglose_mensual || ', ID Presupuesto: ' || v_id_presupuesto || ', Presupuesto Asignado: ' || v_presupuesto_asignado || ', ID Rubro: ' || v_id_rubro || ', Mes: ' || v_mes || ', Total: ' || v_total || ', Presupuesto Actual: ' || v_presupuesto_actual);
+    END LOOP;
+    CLOSE v_cursor;
+END;
+
+
+
 
 CREATE OR REPLACE TRIGGER TGR_COMPRA 
 AFTER INSERT ON COMPRA
@@ -517,24 +567,371 @@ BEGIN
     END IF;
 END;
 
+
+
     
-CREATE OR REPLACE TRIGGER trg_actualizar_presupuesto
-BEFORE UPDATE ON PRESUPUESTO
-FOR EACH ROW
-DECLARE
-    VSaldoComprometido NUMBER;
-BEGIN
-    SELECT saldo_Comprometido
-    INTO VSaldoComprometido
-    FROM PRESUPUESTO
-    WHERE ID_Presupuesto = :OLD.ID_Presupuesto;
- 
-    IF VSaldoComprometido > 0 THEN
-        :NEW.Total := :NEW.Total - VSaldoComprometido;
- 
-        :NEW.saldo_Comprometido := 0;
-    END IF;
+
+CREATE OR REPLACE PACKAGE gestion_presupuesto AS
+
+    FUNCTION crear_centro_costo_y_presupuesto(
+        p_nombre_centro_costo IN VARCHAR2,
+        p_inicio_periodo IN DATE,
+        p_fin_periodo IN DATE,
+        p_total IN NUMBER
+    ) RETURN VARCHAR2;
+
+    FUNCTION insertar_usuario (
+        p_user IN VARCHAR2,
+        p_pass IN VARCHAR2,
+        p_rol IN VARCHAR2,
+        p_id_centroCosto IN NUMBER
+    ) RETURN VARCHAR2;
+
+    FUNCTION obtener_datos_Centro(
+        p_id_centro IN NUMBER
+    ) 
+    RETURN PRESUPUESTO%ROWTYPE;
+
+    FUNCTION validar_usuario(p_user IN VARCHAR2, p_pass IN VARCHAR2)
+      RETURN NUMBER;
+
+    FUNCTION FN_DATOS_USUARIO(V_user IN NUMBER)
+      RETURN USUARIOS%ROWTYPE;
+
+    FUNCTION verificar_presupuesto(
+        p_id_presupuesto IN VARCHAR2,
+        p_valor IN NUMBER
+    ) RETURN VARCHAR2;
+
+    FUNCTION FN_INFO_RUBRO(ID_RUBRO VARCHAR2)
+    RETURN RUBROS%ROWTYPE;
+
+    FUNCTION FN_INFO_COMPRA(COD IN NUMBER)
+    RETURN COMPRA%ROWTYPE;
+
+    FUNCTION get_datos_rubro
+      RETURN SYS_REFCURSOR;
+
+    FUNCTION actualizar_presupuesto(
+        IdCentroCosto IN NUMBER,
+        IniPeriodo IN DATE,
+        FinPeriodo IN DATE,
+        VTotal IN NUMBER
+    ) RETURN VARCHAR2;
+
+    FUNCTION mostrar_permisos_compra
+    RETURN SYS_REFCURSOR;
+
+    FUNCTION mostrar_desglose_mensual_presupuesto
+    RETURN SYS_REFCURSOR;
+
+    PROCEDURE sp_insert_rubro(
+        p_descripción IN RUBROS.descripción%TYPE,
+        p_monto IN RUBROS.monto%TYPE,
+        p_mensaje OUT VARCHAR2
+    );
+
+    PROCEDURE REALIZAR_COMPRA(
+        p_id_usuario IN USUARIOS.ID_USER%TYPE,
+        p_id_rubro IN RUBROS.id_rubro%TYPE,
+        p_cantidad NUMBER,
+        p_mensaje OUT VARCHAR2
+    );
+
+    PROCEDURE MOSTRAR_PERMISOS;
+
+    PROCEDURE MOSTRAR_DESGLOSE;
+
 END;
+
+
+CREATE OR REPLACE PACKAGE BODY gestion_presupuesto AS
+
+    FUNCTION insertar_usuario (
+    p_user IN VARCHAR2,
+    p_pass IN VARCHAR2,
+    p_rol IN VARCHAR2,
+    p_id_centroCosto IN NUMBER
+    ) RETURN VARCHAR2
+    AS
+        v_sql VARCHAR2(4000);
+        v_count NUMBER;
+    BEGIN
+        v_sql := 'SELECT COUNT(*) FROM USUARIOS WHERE USER_NAME = :p_user';
+        EXECUTE IMMEDIATE v_sql INTO v_count USING p_user;
+    
+        IF v_count = 0 THEN
+            v_sql := 'INSERT INTO USUARIOS (ID_USER, USER_NAME, PASS, ROL, ID_CentroCosto) VALUES (usuario_seq.NEXTVAL, :p_user, :p_pass, :p_rol, :p_id_centroCosto)';
+            EXECUTE IMMEDIATE v_sql USING p_user, p_pass, p_rol, p_id_centroCosto;
+    
+            RETURN 'Usuario insertado correctamente';
+        ELSE
+            RETURN 'El usuario ya existe';
+        END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            RETURN 'Error al insertar el usuario';
+    END;
+
+    FUNCTION obtener_datos_Centro(
+    p_id_centro IN NUMBER
+    ) 
+    RETURN PRESUPUESTO%ROWTYPE
+    IS
+        v_sql VARCHAR2(4000);
+        Resultado PRESUPUESTO%ROWTYPE;
+    BEGIN
+        v_sql := 'SELECT ID_Presupuesto, ID_CENTROCOSTO, Total, inicio_Periodo, fin_Periodo, saldo_Comprometido, ID_CENTRO_COSTO
+    
+               FROM 
+                  PRESUPUESTO 
+               WHERE 
+                  ID_CENTROCOSTO = :p_id_centro';
+        BEGIN 
+            EXECUTE IMMEDIATE v_sql INTO Resultado USING p_id_centro;
+            EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                RAISE_APPLICATION_ERROR(-20001, 'No se encontraron datos para el centro de costo ' || p_id_centro);
+            WHEN OTHERS THEN
+                RAISE_APPLICATION_ERROR(-20002, 'Error al obtener datos del centro de costo: ' || SQLERRM);
+        END; 
+        RETURN Resultado;
+    END;
+
+   FUNCTION validar_usuario(p_user IN VARCHAR2, p_pass IN VARCHAR2)
+      RETURN NUMBER
+    AS
+      v_sql VARCHAR2(4000);
+      v_count NUMBER;
+    BEGIN
+      v_sql := 'SELECT COUNT(*) FROM USUARIOS WHERE USER_NAME = :p_user AND PASS = :p_pass';
+      EXECUTE IMMEDIATE v_sql INTO v_count USING p_user, p_pass;
+      
+      IF v_count = 1 THEN
+        RETURN 1; 
+      ELSE
+        RETURN 0; 
+      END IF;
+    END;
+
+    FUNCTION FN_DATOS_USUARIO(V_user IN NUMBER)
+  RETURN USUARIOS%ROWTYPE
+    AS
+      v_usuario USUARIOS%ROWTYPE;
+    BEGIN
+      SELECT ID_USER ,USER_NAME, ROL,PASS, ID_CENTROCOSTO INTO v_usuario
+      FROM USUARIOS
+      WHERE ID_USER = V_user;
+      RETURN v_usuario;
+    END;
+    FUNCTION verificar_presupuesto(
+        p_id_presupuesto IN VARCHAR2,
+        p_valor IN NUMBER
+    ) RETURN VARCHAR2 IS
+        v_total NUMBER;
+        v_saldo_comprometido NUMBER;
+        resultado VARCHAR2(120);
+    BEGIN
+    
+        SELECT Total, saldo_Comprometido
+        INTO v_total, v_saldo_comprometido
+        FROM PRESUPUESTO
+        WHERE ID_CENTROCOSTO = p_id_presupuesto;
+        IF v_total > 0 THEN
+            IF p_valor <= v_total THEN
+                resultado := 'ACEPTADO';
+            ELSE
+                resultado := 'EXCEDIDO';
+            END IF;
+        ELSE
+            IF v_saldo_comprometido < 0 THEN
+                resultado := 'DENEGADO';
+            ELSE
+                resultado := 'EXCEDIDO';
+            END IF;
+        END IF; 
+        RETURN resultado;
+        EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            resultado := 'PRESUPUESTO NO ENCONTRADO';
+            RETURN resultado;
+        WHEN OTHERS THEN
+            RETURN 'ERROR';
+        RETURN resultado;
+    END;
+    FUNCTION FN_INFO_RUBRO(ID_RUBRO VARCHAR2)
+    RETURN RUBROS%ROWTYPE
+    AS
+        v_sql VARCHAR2(4000);
+        Resultado RUBROS%ROWTYPE;
+        v_id_rubro RUBROS.ID_RUBRO%TYPE := ID_RUBRO;
+    BEGIN
+        v_sql := 'SELECT ID_RUBRO, DESCRIPCIÓN, MONTO FROM RUBROS WHERE ID_RUBRO = :ID_RUBRO';
+        
+        BEGIN 
+             EXECUTE IMMEDIATE v_sql INTO Resultado USING v_id_rubro;
+             EXCEPTION
+             WHEN NO_DATA_FOUND THEN
+                RAISE_APPLICATION_ERROR(-20001, 'No se encontraron datos para el RUBRO ' || ID_RUBRO);
+            WHEN OTHERS THEN
+                RAISE_APPLICATION_ERROR(-20002, 'Error al obtener datos del RUBRO: ' || SQLERRM);
+        END;
+       
+        RETURN Resultado;
+    END;
+    FUNCTION FN_INFO_COMPRA(COD IN NUMBER)
+    RETURN COMPRA%ROWTYPE
+    AS
+        v_sql VARCHAR2(4000);
+        RESULTADO COMPRA%ROWTYPE;
+    BEGIN 
+        V_SQL := 'SELECT COD_COMPRA, CANTIDAD, MONTO, ID_RUBRO, ID_USUARIO FROM COMPRA WHERE COD_COMPRA = :COD';
+        
+        EXECUTE IMMEDIATE V_SQL 
+            INTO RESULTADO.COD_COMPRA, RESULTADO.CANTIDAD, RESULTADO.MONTO, RESULTADO.ID_RUBRO, RESULTADO.ID_USUARIO 
+            USING COD;
+        
+        RETURN RESULTADO;
+    EXCEPTION 
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20001, 'No se encontraron datos de la compra ' || COD);
+        WHEN OTHERS THEN
+            RAISE_APPLICATION_ERROR(-20002, 'Error al obtener datos de la compra: ' || SQLERRM);
+    END;
+    PROCEDURE sp_insert_rubro(
+    p_descripción IN RUBROS.descripción%TYPE,
+    p_monto IN RUBROS.monto%TYPE,
+    p_mensaje OUT VARCHAR2
+    ) AS
+        v_sql VARCHAR2(200);
+        v_count NUMBER;
+        v_id_rubro RUBROS.id_rubro%TYPE;
+    BEGIN
+        v_sql := 'SELECT COUNT(*) FROM RUBROS WHERE Descripción = :p_descripción';
+        EXECUTE IMMEDIATE v_sql INTO v_count USING p_descripción;
+    
+        IF v_count > 0 THEN
+            p_mensaje := 'No se puede agregar, la descripción ya existe';
+        ELSE
+            v_id_rubro := SEQ_RUBRO.NEXTVAL;
+            v_sql := 'INSERT INTO RUBROS (ID_RUBRO, Descripción, Monto) VALUES (:v_id_rubro, :p_descripción, :p_monto)';
+            EXECUTE IMMEDIATE v_sql USING v_id_rubro, p_descripción, p_monto;
+            p_mensaje := 'Rubro agregado correctamente';
+        END IF;
+    END;
+    FUNCTION get_datos_rubro
+    RETURN SYS_REFCURSOR
+    AS
+      cur_datos SYS_REFCURSOR;
+    BEGIN
+      OPEN cur_datos FOR
+        SELECT id_rubro, descripción, monto
+        FROM RUBROS;
+      RETURN cur_datos;
+    END;
+    PROCEDURE REALIZAR_COMPRA(
+    p_id_usuario IN USUARIOS.ID_USER%TYPE,
+    p_id_rubro IN RUBROS.id_rubro%TYPE,
+    p_cantidad NUMBER,
+    p_mensaje OUT VARCHAR2
+    )
+    AS 
+        v_sql VARCHAR2(300);
+        v_usuario Usuarios%rowtype;
+        v_rubro RUBROS%ROWTYPE;
+        codigo number;
+        v_monto NUMBER;
+        v_estado VARCHAR2(20);
+       
+    BEGIN
+        v_usuario := FN_DATOS_USUARIO(p_id_usuario);
+        v_rubro := FN_INFO_RUBRO(p_id_rubro);
+        v_monto := v_rubro.MONTO * p_cantidad;
+        codigo  :=seq_compra.NEXTVAL;
+        v_sql := 'INSERT INTO COMPRA (COD_COMPRA, MONTO, ID_RUBRO, ID_USUARIO,CANTIDAD) ' ||
+                 'VALUES (:codigo, :v_monto, :p_id_rubro, :p_id_usuario, :p_cantidad)' ;
+        EXECUTE IMMEDIATE v_sql USING codigo,v_monto,p_id_rubro,p_id_usuario,p_cantidad;
+        v_estado := verificar_presupuesto(v_usuario.ID_CENTROCOSTO, v_monto);
+        DBMS_OUTPUT.PUT_LINE(v_estado);
+        p_mensaje := v_estado;
+    END;
+     FUNCTION actualizar_presupuesto(
+        IdCentroCosto IN NUMBER,
+        IniPeriodo IN DATE,
+        FinPeriodo IN DATE,
+        VTotal IN NUMBER
+    ) RETURN VARCHAR2 IS
+        v_mensaje VARCHAR2(100);
+    BEGIN
+        UPDATE PRESUPUESTO
+        SET inicio_Periodo = IniPeriodo,
+            fin_Periodo = FinPeriodo,
+            Total = VTotal
+        WHERE ID_CentroCosto = IdCentroCosto;
+        IF SQL%ROWCOUNT > 0 THEN
+            v_mensaje := 'Presupuesto actualizado con éxito.';
+        ELSE
+            v_mensaje := 'Presupuesto no encontrado para el Centro de Costo especificado.';
+        END IF;
+        RETURN v_mensaje;
+    END;   
+   FUNCTION mostrar_permisos_compra
+    RETURN SYS_REFCURSOR IS
+        v_cursor SYS_REFCURSOR;
+    BEGIN
+        OPEN v_cursor FOR
+            SELECT ID_Permiso,Cod_Compra,fecha,ID_Centro, Estado
+            FROM PERMISOS_COMPRA;
+        RETURN v_cursor;
+    END; 
+        PROCEDURE MOSTRAR_PERMISOS IS
+        v_cursor SYS_REFCURSOR;
+        v_id_permiso NUMBER;
+        v_id_centro NUMBER;
+        v_cod_compra NUMBER;
+        v_fecha DATE;
+        v_estado VARCHAR2(4);
+    BEGIN
+        v_cursor := mostrar_permisos_compra;
+        LOOP
+            FETCH v_cursor INTO v_id_permiso, v_id_centro, v_cod_compra, v_fecha, v_estado;
+            EXIT WHEN v_cursor%NOTFOUND;
+            DBMS_OUTPUT.PUT_LINE('ID Permiso: ' || v_id_permiso || ', ID Centro: ' || v_id_centro || ', Cod Compra: ' || v_cod_compra || ', Fecha: ' || v_fecha || ', Estado: ' || v_estado);
+        END LOOP;
+        CLOSE v_cursor;
+    END;
+   FUNCTION mostrar_desglose_mensual_presupuesto
+    RETURN SYS_REFCURSOR IS
+        v_cursor SYS_REFCURSOR;
+    BEGIN
+        OPEN v_cursor FOR
+            SELECT ID_DesgloseMensual, ID_Pesupuesto, PresupuestoAsignado, ID_Rubro, Mes, Total, PresupuestoActual
+            FROM DESGLOSE_MENSUAL_PRESUPUESTO;
+        RETURN v_cursor;
+    END; 
+      PROCEDURE MOSTRAR_DESGLOSE IS
+        v_cursor SYS_REFCURSOR;
+        v_id_desglose_mensual NUMBER;
+        v_id_presupuesto VARCHAR2(100);
+        v_presupuesto_asignado NUMBER;
+        v_id_rubro VARCHAR2(100);
+        v_mes DATE;
+        v_total NUMBER;
+        v_presupuesto_actual NUMBER;
+    BEGIN
+        v_cursor := mostrar_desglose_mensual_presupuesto;
+        LOOP
+            FETCH v_cursor INTO v_id_desglose_mensual, v_id_presupuesto, v_presupuesto_asignado, v_id_rubro, v_mes, v_total, v_presupuesto_actual;
+            EXIT WHEN v_cursor%NOTFOUND;
+            DBMS_OUTPUT.PUT_LINE('ID Desglose Mensual: ' || v_id_desglose_mensual || ', ID Presupuesto: ' || v_id_presupuesto || ', Presupuesto Asignado: ' || v_presupuesto_asignado || ', ID Rubro: ' || v_id_rubro || ', Mes: ' || v_mes || ', Total: ' || v_total || ', Presupuesto Actual: ' || v_presupuesto_actual);
+        END LOOP;
+        CLOSE v_cursor;
+    END;    
+END ;
+
+
+
+
     
 
 DECLARE
@@ -661,8 +1058,7 @@ BEGIN
   DBMS_OUTPUT.PUT_LINE('inicio_Periodo: ' || v_presupuesto.inicio_Periodo);
   DBMS_OUTPUT.PUT_LINE('Total: ' || v_presupuesto.TOTAL);
   DBMS_OUTPUT.PUT_LINE('fin_Periodo: ' || v_presupuesto.fin_Periodo);
-   DBMS_OUTPUT.PUT_LINE('saldo_Comprometido: ' || v_presupuesto.SALDO_COMPROMETIDO);
-  
+    DBMS_OUTPUT.PUT_LINE('saldo_Comprometido: ' || v_presupuesto.SALDO_COMPROMETIDO);
 END;
 
 
