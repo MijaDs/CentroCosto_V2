@@ -25,8 +25,8 @@ public interface UsuarioRepo extends JpaRepository<Usuario, Long> {
     @Query(value = "SELECT FN_DATOS_USUARIO(:p_user); END;", nativeQuery = true)
     Usuario getUsuarioDatos(@Param("p_user") String user);
 
-    @Procedure(procedureName = "INCERTAR_USUARIO")
-    String incertarUsuario(@Param("username") String username, @Param("password") String password, @Param("rol") String rol, @Param("id_centroCosto") int id_centroCosto);
+    @Procedure(procedureName = "INSERTAR_USUARIO")
+    String insertarUsuario(@Param("username") String username, @Param("password") String password, @Param("rol") String rol, @Param("id_centroCosto") int id_centroCosto);
     
     
     

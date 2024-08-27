@@ -29,7 +29,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     public String agregarUsuario(String username, String password, String rol, int centroCosto) {
-        String res = usuarioRepo.incertarUsuario(username, password, rol, centroCosto);
+        String res = usuarioRepo.insertarUsuario(username, password, rol, centroCosto);
         return res;
     }
     @Override

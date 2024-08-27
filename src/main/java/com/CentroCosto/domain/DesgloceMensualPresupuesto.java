@@ -11,11 +11,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.sql.Date;
-import java.util.List;
 import lombok.Data;
 
 /**
@@ -24,30 +22,25 @@ import lombok.Data;
  */
 @Data
 @Entity
-@Table(name="PRESUPUESTO")
-public class Presupuesto implements Serializable{
-    private static final long serialVersionUID = 1L;
+@Table(name="DESGLOSE_MENSUAL_PRESUPUESTO")
+public class DesgloceMensualPresupuesto implements Serializable{
+    private static long serialVersionUID =1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID_Presupuesto")
-    private String idPresupuesto;
-
-    @Column(name = "ID_CentroCosto")
-    private int idCentroCosto;
-
-    @Column(name = "saldo_Comprometido")
-    private float saldoComprometido;
-
-    @Column(name = "inicio_Periodo")
-    private Date inicioPeriodo;
-
-    @Column(name = "fin_Periodo")
-    private Date finPeriodo;
-
-    @Column(name = "Total")
+    @Column(name="ID_DESGLOSEMENSUAL")
+    private Long idDesglose;
+    @ManyToOne
+    @JoinColumn(name = "ID_PRESUPUESTO", referencedColumnName = "ID_PRESUPUESTO")
+    private Presupuesto presupuesto;
+    @Column(name="PRESUPUESTOASIGNADO")
+    private int presupuestoAsignado;
+    @ManyToOne
+    @JoinColumn(name = "ID_RUBRO", referencedColumnName = "ID_RUBRO")
+    private Rubro rubro;
+    @Column(name="MES")
+    private Date mes;
+    @Column(name="TOTAL")
     private int total;
-    
-    @OneToMany(mappedBy = "presupuesto")
-    private List<DesgloceMensualPresupuesto> desglosesMensuales;
-    
+    @Column(name="PRESUSPUESTOACTUAL")
+    private int presupuestoActual;
 }

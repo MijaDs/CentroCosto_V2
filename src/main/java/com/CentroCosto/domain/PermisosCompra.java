@@ -11,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.sql.Date;
@@ -33,12 +34,11 @@ public class PermisosCompra implements Serializable{
     private int codCompra;
     @Column (name="FECHA")
     private Date fecha;
-    @Column (name="ID_CENTRO")
-    private int idCentro;
+ 
     @Column (name="ESTADO")
     private String estado;
     
     @ManyToOne
-    @JoinColumn(name = "ID_CENTROCOSTO", referencedColumnName = "ID_CENTROCOSTO")
+    @JoinColumn(name = "ID_CENTRO", referencedColumnName = "ID_CENTROCOSTO")
     private CentroCosto centroCosto;
 }

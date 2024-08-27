@@ -11,8 +11,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.io.Serializable;
+import java.util.List;
 
 import lombok.Data;
 
@@ -40,4 +42,6 @@ public class Usuario implements Serializable{
     @ManyToOne
     @JoinColumn(name = "ID_CENTROCOSTO", referencedColumnName = "ID_CENTROCOSTO")
     private CentroCosto centroCosto;
+    @OneToMany(mappedBy = "usuario")
+    private List<Compra> compras;
 }

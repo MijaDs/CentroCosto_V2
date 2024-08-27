@@ -9,6 +9,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.io.Serializable;
 import lombok.Data;
@@ -30,8 +32,10 @@ public class Compra implements Serializable {
     private int cantidad;
     @Column(name="MONTO")
     private int monto;
-    @Column(name="ID_RUBRO")
-    private String idRubro;
-    @Column(name="ID_USUARIO")
-    private int idUsuario;
+    @ManyToOne
+    @JoinColumn(name = "ID_RUBRO", referencedColumnName = "ID_RUBRO")
+    private Rubro rubro;
+    @ManyToOne
+    @JoinColumn(name = "ID_USUARIO", referencedColumnName = "ID_USER")
+    private Usuario usuario;
 }
